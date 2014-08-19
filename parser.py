@@ -3,7 +3,6 @@
 
 from HTMLParser import HTMLParser
 from argparse import ArgumentParser
-import sys
 
 
 class CompressorHTMLParser(HTMLParser):
@@ -26,24 +25,25 @@ class CompressorHTMLParser(HTMLParser):
 
 
 def get_args():
-    parser = ArgumentParser(description='Compressor HTML parser')
-    parser.add_argument('f', action='store', help='First fraction, e.g. 1/2')
-
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-a', dest='add', action='store_true', help='Adds fractions')
-    group.add_argument('-s', dest='sub', action='store_true', help='Subtracts fractions')
-    group.add_argument('-m', dest='mul', action='store_true', help='Multiplies fractions')
-    group.add_argument('-d', dest='div', action='store_true', help='Divides fractions')
+    parser = ArgumentParser(description='HTML externals parser')
+    parser.add_argument(
+        '-p',
+        action='store',
+        required=True,
+        metavar='path_to_html_file',
+        help='Path to file'
+    )
 
     return parser.parse_args()
 
 
 if __name__ == '__main__':
-    html_file = open('index.html').read()
+    try:
+        html_file = open(get_args().p).read()
 
-    parser = CompressorHTMLParser()
-    parser.feed(html_file)
+        parser = CompressorHTMLParser()
+        parser.feed(html_file)
 
-    # print(parser.files)
-
-    args = get_args()
+        print(parser.files)
+    except Exception as e:
+        print(e)
