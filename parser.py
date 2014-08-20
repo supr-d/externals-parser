@@ -3,62 +3,57 @@
 
 from HTMLParser import HTMLParser
 from argparse import ArgumentParser
-import re
+from re import sub
+import config
 
 
 class HTMLExternalsParser(HTMLParser):
-    files = {
-        'css': [],
-        'js': []
-    }
+    # сюда записываются найденные css-ссылки
+    css = []
 
-    exception_links = [
-        '/favicon.ico',
-        '/css/map.min.css',
-        '/js/map.min.js',
-        'https://enterprise.api-maps.yandex.ru/2.0.37/'
-    ]
-
-    exception_types = [
-        ('type', 'image/x-icon'),
-        ('type', 'text/html')
-    ]
-
-    tags_to_scan = [
-        'script',
-        'link'
-    ]
+    # сюда записываются найденные js-ссылки
+    js = []
 
     @staticmethod
     def parse_link(link):
-        return link.split('?')[0]
+        if link and type(link) == str:
+            return link.split('?')[0]
 
     @staticmethod
-    def remove_root(link, folder):
-        return re.sub(folder, '', link)
+    def remove_resource_root(link, folder):
+        return sub(folder, '', link)
 
-    def check_tag_types(self, tag):
-        for val in self.exception_types:
-            if val in tag:
+    @staticmethod
+    def check_tag_type(tag):
+        for excluded_type in config.excluded_types:
+            if excluded_type in tag:
                 return False
 
         return True
 
+    def __str__(self):
+        return '\n\n'.join(
+            (
+                ' '.join(self.css),
+                ' '.join(self.js)
+            )
+        )
+
     def handle_starttag(self, tag, attrs):
-        if tag in self.tags_to_scan and attrs and self.check_tag_types(attrs):
+        if tag in ['script', 'link'] and attrs and self.check_tag_type(attrs):
             for attr in attrs:
                 link = self.parse_link(attr[1])
 
-                if link not in self.exception_links:
+                if link not in config.excluded_links:
                     if attr[0] == 'href':
-                        self.files['css'].append(self.remove_root(link, '/css/'))
+                        self.css.append(self.remove_resource_root(link, '/css/'))
                     elif attr[0] == 'src':
-                        self.files['js'].append(self.remove_root(link, '/js/'))
+                        self.js.append(self.remove_resource_root(link, '/js/'))
 
 
 def get_args():
-    parser = ArgumentParser(description='HTML externals parser')
-    parser.add_argument(
+    arg_parser = ArgumentParser(description='HTML externals parser')
+    arg_parser.add_argument(
         '-p',
         action='store',
         required=True,
@@ -66,7 +61,7 @@ def get_args():
         help='Path to file'
     )
 
-    return parser.parse_args()
+    return arg_parser.parse_args()
 
 
 if __name__ == '__main__':
@@ -76,18 +71,6 @@ if __name__ == '__main__':
         parser = HTMLExternalsParser()
         parser.feed(html_file)
 
-        css_files = []
-        js_files = []
-
-        for css in parser.files['css']:
-            css_files.append(css)
-
-        print(' '.join(css_files))
-        print()
-
-        for js in parser.files['js']:
-            js_files.append(js)
-
-        print(' '.join(js_files))
+        print(parser)
     except Exception as e:
         print(e)
