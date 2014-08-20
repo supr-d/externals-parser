@@ -5,7 +5,7 @@ from HTMLParser import HTMLParser
 from argparse import ArgumentParser
 
 
-class CompressorHTMLParser(HTMLParser):
+class HTMLExternalsParser(HTMLParser):
     files = {
         'css': [],
         'js': []
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     try:
         html_file = open(get_args().p).read()
 
-        parser = CompressorHTMLParser()
+        parser = HTMLExternalsParser()
         parser.feed(html_file)
 
         print(parser.files)
