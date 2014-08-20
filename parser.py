@@ -39,7 +39,7 @@ class HTMLExternalsParser(HTMLParser):
         if not self.css or not self.js:
             return 'Отсутствуют подходящие ссылки'
         else:
-            return '\n\n'.join(
+            return 'CSS-ссылки:\n' + '\n\nJS-ссылки:\n'.join(
                 (
                     ' '.join(self.css),
                     ' '.join(self.js)
