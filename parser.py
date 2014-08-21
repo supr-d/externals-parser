@@ -24,10 +24,7 @@ class HTMLResLinksParser(HTMLParser):
 
     @staticmethod
     def check_attrs(attrs):
-        if ('rel', 'stylesheet') in attrs or [attr for attr in attrs if 'src' in attr]:
-            return True
-        else:
-            return False
+        return ('rel', 'stylesheet') in attrs or [attr for attr in attrs if 'src' in attr]
 
     @staticmethod
     def remove_link_params(link):
