@@ -1,4 +1,4 @@
-#!/usr/bin/python3 -tt
+#!/usr/local/bin/python3 -tt
 # -*- coding: utf-8 -*-
 
 from HTMLParser import HTMLParser
@@ -7,59 +7,56 @@ import re
 import config
 
 
-class HTMLExternalsParser(HTMLParser):
+class HTMLResLinksParser(HTMLParser):
     # сюда записываются найденные css-ссылки
     css = []
 
     # сюда записываются найденные js-ссылки
     js = []
 
-    @staticmethod
-    def parse_link(link):
-        if link and type(link) == str:
-            return link.split('?')[0]
+    def __str__(self):
+        if not self.css or not self.js:
+            return 'Не найдено ни одной ресурсной ссылки'
+        else:
+            return '\n\n'.join(
+                (' '.join(self.css), ' '.join(self.js))
+            )
 
     @staticmethod
-    def remove_resource_root(link, folder):
-        return re.sub(folder, '', link)
+    def check_attrs(attrs):
+        if ('rel', 'stylesheet') in attrs or [attr for attr in attrs if 'src' in attr]:
+            return True
+        else:
+            return False
 
     @staticmethod
-    def check_tag_type(tag):
-        for excluded_type in config.excluded_types:
-            if excluded_type in tag:
-                return False
-
-        return True
+    def remove_link_params(link):
+        return link.split('?')[0]
 
     @staticmethod
     def is_external_link(link):
-        return re.compile(r'(http|//)').search(link)
-
-    def __str__(self):
-        if not self.css or not self.js:
-            return 'Отсутствуют подходящие ссылки'
-        else:
-            return 'CSS-ссылки:\n' + '\n\nJS-ссылки:\n'.join(
-                (
-                    ' '.join(self.css),
-                    ' '.join(self.js)
-                )
-            )
+        return config.ignore_externals and re.compile(r'(http|//)').search(link)
 
     def handle_starttag(self, tag, attrs):
-        if tag in ['script', 'link'] and attrs and self.check_tag_type(attrs):
+        if tag in ['script', 'link'] and self.check_attrs(attrs):
             for attr in attrs:
-                link = self.parse_link(attr[1])
+                param_name = attr[0]
+                link = self.remove_link_params(attr[1])
 
-                if link and link not in config.excluded_links and not self.is_external_link(link):
-                    if attr[0] == 'href':
-                        self.css.append(self.remove_resource_root(link, '/css/'))
-                    elif attr[0] == 'src':
-                        self.js.append(self.remove_resource_root(link, '/js/'))
+                external_check = \
+                    True if not config.ignore_externals \
+                    else True if not self.is_external_link(link) \
+                    else False
+
+                if link not in config.ignore_links and external_check:
+                    if param_name == 'href':
+                        self.css.append(link)
+                    elif param_name == 'src':
+                        self.js.append(link)
 
 
 def get_args():
-    arg_parser = ArgumentParser(description='HTML externals parser')
+    arg_parser = ArgumentParser(description='HTML resource links parser')
     arg_parser.add_argument(
         '-p',
         action='store',
@@ -73,10 +70,10 @@ def get_args():
 
 if __name__ == '__main__':
     try:
-        html_file = open(get_args().p).read()
+        target_file = open(get_args().p).read()
 
-        parser = HTMLExternalsParser()
-        parser.feed(html_file)
+        parser = HTMLResLinksParser()
+        parser.feed(target_file)
 
         print(parser)
     except Exception as e:
